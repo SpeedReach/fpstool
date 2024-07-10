@@ -1,19 +1,89 @@
 package main
 
-import "github.com/kbinani/screenshot"
+import (
+	"encoding/binary"
+	"github.com/kbinani/screenshot"
+	"image"
+	"image/png"
+	"net"
+)
 
 func main() {
+	// Calculate where to capture
 	bounds := screenshot.GetDisplayBounds(0)
-	width := bounds.Size().X
+	squareSize := min(bounds.Dx(), bounds.Dy()) / 5
+	top := bounds.Dy()/2 - squareSize/2
+	left := bounds.Dx()/2 - squareSize/2
+	rect := image.Rect(left, top, left+squareSize, top+squareSize)
+	tcp(rect)
+}
 
-	img, err := screenshot.CaptureRect(bounds)
+func tcp(rect image.Rectangle) {
+	conn, err := net.Dial("tcp", "localhost:12345")
 	if err != nil {
 		panic(err)
 	}
-	fileName := fmt.Sprintf("%d_%dx%d.png", i, bounds.Dx(), bounds.Dy())
-	file, _ := os.Create(fileName)
-	defer file.Close()
-	png.Encode(file, img)
+	defer conn.Close()
+	if err = binary.Write(conn, binary.LittleEndian, int32(rect.Dx())); err != nil {
+		panic(err)
+	}
+	if err = binary.Write(conn, binary.LittleEndian, int32(rect.Dy())); err != nil {
+		panic(err)
+	}
+	println("Wrote size to server")
+	//start capturing and sending images
+	for true {
+		img, err := screenshot.CaptureRect(rect)
+		if err != nil {
+			panic(err)
+		}
+		if err = png.Encode(conn, img); err != nil {
+			panic(err)
+		}
+		var buf = [1]byte{}
+		if _, err = conn.Read(buf[0:]); err != nil {
+			panic(err)
+		}
+		if buf[0] == 'S' {
+			println("Server received image")
+		} else {
+			panic("Server did not receive image: " + string(buf[0]))
+		}
+	}
+}
 
-	fmt.Printf("#%d : %v \"%s\"\n", i, bounds, fileName)
+func udp(rect image.Rectangle) {
+
+	// Send the capture size to the server
+	conn, err := net.Dial("udp", "localhost:12345")
+	if err != nil {
+		panic(err)
+	}
+	defer conn.Close()
+	if err = binary.Write(conn, binary.LittleEndian, int32(rect.Dx())); err != nil {
+		panic(err)
+	}
+	if err = binary.Write(conn, binary.LittleEndian, int32(rect.Dy())); err != nil {
+		panic(err)
+	}
+	println("Wrote size to server")
+	//start capturing and sending images
+	for true {
+		img, err := screenshot.CaptureRect(rect)
+		if err != nil {
+			panic(err)
+		}
+		if err = png.Encode(conn, img); err != nil {
+			panic(err)
+		}
+		var buf = [1]byte{}
+		if _, err = conn.Read(buf[0:]); err != nil {
+			panic(err)
+		}
+		if buf[0] == 'S' {
+			println("Server received image")
+		} else {
+			panic("Server did not receive image: " + string(buf[0]))
+		}
+	}
 }
