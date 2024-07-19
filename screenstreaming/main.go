@@ -38,7 +38,8 @@ func tcp(rect image.Rectangle) {
 			panic(err)
 		}
 		if err = png.Encode(conn, img); err != nil {
-			panic(err)
+			// retry connection
+			continue
 		}
 		var buf = [1]byte{}
 		if _, err = conn.Read(buf[0:]); err != nil {

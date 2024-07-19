@@ -38,7 +38,7 @@ func (fd YoloV5FigureDetection) Detect(image image.Image) []Detected {
 	}
 	defer resp.Body.Close()
 
-	// Read and print the response
+	// ReadEvent and print the response
 	body, err := io.ReadAll(resp.Body)
 	if err != nil {
 		panic(err)

@@ -1,2 +1,9 @@
 .vscode
 .idea
+server/build/**
+training_data
+*main.exe
+*.engine
+*.pt
+*.bak
+*.onnx

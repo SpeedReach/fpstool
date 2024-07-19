@@ -25,20 +25,17 @@ func NewTcpSource() TcpSource {
 }
 
 func (source TcpSource) Start() {
-	defer func() {
-		recover()
-	}()
 	if source.started {
 		return
 	}
 	source.started = true
 	// Start a TCP server on port 8080
-	listener, err := net.Listen("tcp", "localhost:12345")
+	listener, err := net.Listen("tcp", ":12345")
 	if err != nil {
 		panic(err)
 	}
 	defer listener.Close()
-	fmt.Println("Server started on localhost:12345")
+	fmt.Printf("Server started on %s", listener.Addr().String())
 	for {
 		// Accept a new client connection
 		conn, err := listener.Accept()
